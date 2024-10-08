@@ -154,9 +154,11 @@ def algorithm_2(n,k,q,t,system, I, survivals):			# Algorithm 2
 	def nested_loops(depth, current_depth=0,current_combination=[]):		# subroutine for exploring all the compbinations
 		if current_depth == depth:
 			L = [ [I[r],current_combination[r]] for r in range(len(W))]
+			# print(L)
 			temp = task_2(n,k,q,t,system,L,survivals)
 			if temp:
-				survivals_temp.append(L)
+					for pair in L:
+						survivals_temp.append(pair)
 				#print(L)
 			return
 		for i in range(len(W[current_depth])):
@@ -165,17 +167,31 @@ def algorithm_2(n,k,q,t,system, I, survivals):			# Algorithm 2
 	nested_loops(len(I))
 	# print(survivals_temp)
 
-	for i in I:				# we leave only the variables that passed the test 2
+	# if len(I) == 1:
+	for i in I:								# we leave only the variables that passed test 2
 		to_remove = []
 		for j in survivals[i]:
-			if [i,j] in survivals_temp[0]:
+			if [i,j] in survivals_temp:
 				h = 0
 			else:
 				to_remove += [j]
-				#print([i,j])
+				# print([i,j])
 		for h in to_remove:
 			survivals[i].remove(h)
 	return survivals
+
+#	if len(I) > 1:
+#		for i in I:								# we leave only the variables that passed test 2
+#			to_remove = []
+#			for j in survivals[i]:
+#				if [i,j] in survivals_temp[0]:
+#					h = 0
+#				else:
+#					to_remove += [j]
+#					# print([i,j])
+#			for h in to_remove:
+#				survivals[i].remove(h)
+#		return survivals
 
 
 def count_vars(survivals):
@@ -240,15 +256,20 @@ def main(n,k,q,t):
 			system = system.stack(get_linear_system(prefix, M, M_, suffix))
 		
 		survivals = algorithm_3(n,k,q,t,system)
-		if count_vars(survivals) <= system.nrows():									# if the number of variables is less than the number of equation
-			columns = [i*n + j for i in range(n) for j in survivals[i]]		# we can recover the secret
-			vec = system[:, columns].transpose().kernel().basis()[0]
-			M = zero_matrix(FiniteField(q), n,n)
+		if count_vars(survivals) <= system.rank():								# if the number of variables is less than the number of equation
+			columns = [i*n + j for i in range(n) for j in survivals[i]]		    # we can recover the secret
+			# print(survivals)
+			# print(columns)
+			vec = system[:, columns].right_kernel_matrix()[0]
+			# print(system[:, columns].rank())
+			# print(vec)
+			Monomial = zero_matrix(FiniteField(q), n,n)
 			entries = survivals_to_entries(survivals)
-			for h in range(len(vec)):
+			# print(entries)
+			for h in range(len(entries)):
 				entry = entries[h]
-				M[entry[0],entry[1]] = vec[h]
-			return M, G_i, G_i_prime
+				Monomial[entry[0],entry[1]] = vec[h]
+			return Monomial, G_i, G_i_prime
 
 	M, G_i, G_i_prime = test_algorithm(n,k,q)
 
@@ -256,6 +277,7 @@ def main(n,k,q,t):
 		if G_i_prime[i] != (G_i[i]*M).rref() :
 			print(G_i_prime[i], (G_i_prime[i]*M).rref())
 			print(f'\n Algorithm failed. The matrix found does not solve the instance\n')
+			print(M)
 			return
 	
 	print(f'The retrieved matrix is \n{M}')
