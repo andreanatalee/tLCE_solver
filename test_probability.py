@@ -11,6 +11,7 @@ from itertools import combinations
 import multiprocessing as mp
 import time
 import random
+from tqdm import tqdm
 
 
 # SageMath imports
@@ -165,7 +166,7 @@ def task_2(n,k,q,t,system,L):
 
 #-------------------------------------------------
 
-def main(n,k,q,t,m):
+def test(n,k,q,t,m):
 	success_count = 0
 	l = n - k*t + 1
 	d = (t*k - n + l)*(t*(n-k)-(t-1)*(n-l)) - (l - 1)
@@ -174,24 +175,27 @@ def main(n,k,q,t,m):
 	suffix = identity_matrix(FiniteField(q), n - k)
 
 	Q = sample_monomial_matrix(n,q)
-	print(f'\nSecret monomial matrix, Q:\n{Q}\n')
+	# print(f'\nSecret monomial matrix, Q:\n{Q}\n')
 
-	G_i = []				# Lists of codes
-	G_i_prime = []
-	#H_i_prime = []
-	system = matrix(FiniteField(q), 0, n**2)
-	print(f'The samples are:\n')
-	for i in range(t):
-		M, M_ = oracle_call_lce(Q,n,k,q)
-		G = identity_matrix(FiniteField(q), k).augment(M, subdivide=False)
-		G_ = identity_matrix(FiniteField(q), k).augment(M_, subdivide=False)
-		print(f'\nG{i}:\n{G}\n')
-		print(f'\nG{i}^:\n{G_}\n')
-		#H_ = (-M_.transpose()).augment(identity_matrix(GF(q), n-k))
-		G_i += [G]
-		G_i_prime += [G_]
-		#H_i_prime += [H_]
-		system = system.stack(get_linear_system(prefix, M, M_, suffix))
+	while (True):
+		G_i = []				# Lists of codes
+		G_i_prime = []
+		#H_i_prime = []
+		system = matrix(FiniteField(q), 0, n**2)
+		# print(f'The samples are:\n')
+		for i in range(t):
+			M, M_ = oracle_call_lce(Q,n,k,q)
+			G = identity_matrix(FiniteField(q), k).augment(M, subdivide=False)
+			G_ = identity_matrix(FiniteField(q), k).augment(M_, subdivide=False)
+			# print(f'\nG{i}:\n{G}\n')
+			# print(f'\nG{i}^:\n{G_}\n')
+			#H_ = (-M_.transpose()).augment(identity_matrix(GF(q), n-k))
+			G_i += [G]
+			G_i_prime += [G_]
+			#H_i_prime += [H_]
+			system = system.stack(get_linear_system(prefix, M, M_, suffix))
+		if (system.rank() == system.nrows()):
+			break
 
 	for i in range(m):
 		flag = 1
@@ -204,13 +208,25 @@ def main(n,k,q,t,m):
 					flag = 0
 		if task_2(n,k,q,t,system,L):
 			success_count += 1
-			print(L)
+			#print(L)
 
+	return success_count
+
+def main(n,k,q,t,m):
+	false_positives = []
+	l = n - k*t + 1
+	d = (t*k - n + l)*(t*(n-k)-(t-1)*(n-l)) - (l - 1)
+ 
+	# Loop to run the algorithm 10 times
+	for i in tqdm(range(10)):
+		false_positives += [test(n,k,q,t,m)]
+
+	# Calculate average number of false positives
+	average = sum(false_positives) / 10
 
 	# Print the results
-	print(f"False positives found: {success_count}/{m} which means rate = {success_count*100/m -0.0} %")
-	print(f"Expected number of false positives: {m/(q**d) - 0.}")
-
+	print(f"Average False Positives Found: {average}")
+	print(f"Expected: {m/(q**d) - 0.}")
 
 #---------------------------------------------------
 
@@ -221,4 +237,4 @@ if __name__ == '__main__':
 	q = arguments(sys.argv[1:]).prime
 	t = arguments(sys.argv[1:]).samples_number
 	m = arguments(sys.argv[1:]).iterations
-	main(n, k, q, t, m)	
+	main(n, k, q, t, m)
