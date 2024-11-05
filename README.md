@@ -38,7 +38,7 @@ usage: test_probability.py [-h] -n CODE_LENGTH -k CODE_DIMENSION -q PRIME -t SAM
 
 options:
   -h, --help  show this help message and exit
-  -n CODE_LENGTH        Code lengtht n
+  -n CODE_LENGTH        Code length n
   -k CODE_DIMENSIONS    Code dimension k
   -q PRIME              Modulo q
   -t SAMPLES            Number of samples
